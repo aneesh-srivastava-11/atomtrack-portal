@@ -2,6 +2,7 @@ import { Quarter } from "@prisma/client";
 import { prisma } from "../utils/prisma.js";
 import { AppError, asyncHandler } from "../utils/errors.js";
 import { currentQuarterAllowed, getActiveCycle } from "../services/goal.service.js";
+import { syncSharedAchievement } from "../services/shared.service.js";
 
 async function ensureWindowOpen(quarter: Quarter) {
   const cycle = await getActiveCycle();
@@ -17,6 +18,10 @@ export const upsertCheckIn = asyncHandler(async (req, res) => {
     create: { ...req.body, userId: req.user!.id },
     update: req.body
   });
+
+  // Sync achievement to linked shared goals if this is the primary owner
+  await syncSharedAchievement(req.body.goalId, req.body.quarter);
+
   res.json(checkIn);
 });
 
@@ -31,5 +36,9 @@ export const updateCheckIn = asyncHandler(async (req, res) => {
   if (!existing) throw new AppError("Check-in not found", 404);
   await ensureWindowOpen(existing.quarter);
   const updated = await prisma.checkIn.update({ where: { id }, data: req.body });
+
+  // Sync achievement to linked shared goals if this is the primary owner
+  await syncSharedAchievement(existing.goalId, existing.quarter);
+
   res.json(updated);
 });

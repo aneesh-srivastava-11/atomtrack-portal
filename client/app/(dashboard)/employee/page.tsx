@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
-import { Edit, Plus, Send, Trash2 } from "lucide-react";
+import { AlertCircle, Edit, Plus, Send, Share2, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useGoalStore } from "@/stores/goalStore";
 import { StatusBadge } from "@/components/status-badge";
@@ -28,20 +28,33 @@ export default function EmployeeDashboard() {
     setGoals(data);
   }
 
+  const hasDrafts = goals.some((g) => g.status === "DRAFT");
+  const hasRejections = goals.some((g) => g.rejectionComment);
+
   return (
     <section className="grid gap-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">My Goals - Q2 2025</h1>
+          <h1 className="text-2xl font-semibold">My Goals</h1>
           <p className="text-sm leading-relaxed text-muted-foreground">Create up to 8 goals, assign 100% total weightage, then submit them for manager review.</p>
         </div>
         <div className="flex gap-2">
           <Button asChild variant="outline" disabled={goals.length >= 8}><Link href="/employee/goals/create"><Plus className="h-4 w-4" />Create Goal</Link></Button>
-          <Button disabled={totalWeightage !== 100} onClick={submit} title={totalWeightage === 100 ? "Submit for manager review" : "Total weightage must equal 100%"}>
+          <Button disabled={totalWeightage !== 100 || !hasDrafts} onClick={submit} title={totalWeightage === 100 ? "Submit for manager review" : "Total weightage must equal 100%"}>
             <Send className="h-4 w-4" />Submit for Approval
           </Button>
         </div>
       </div>
+
+      {hasRejections && (
+        <Alert className="border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
+          <span className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            One or more goals were returned for rework by your manager. Review the comments below, make changes, and re-submit.
+          </span>
+        </Alert>
+      )}
+
       <Card>
         <CardContent className="grid gap-3 p-5">
           <div className="flex items-center justify-between">
@@ -55,9 +68,10 @@ export default function EmployeeDashboard() {
           {totalWeightage !== 100 && <Alert>Total must equal 100% before you submit for approval.</Alert>}
         </CardContent>
       </Card>
+
       <div className="grid gap-3 lg:grid-cols-2">
         {goals.map((goal) => (
-          <Card key={goal.id}>
+          <Card key={goal.id} className={goal.rejectionComment ? "border-amber-300 dark:border-amber-700" : ""}>
             <CardHeader className="flex-row items-start justify-between">
               <div>
                 <CardTitle>{goal.title}</CardTitle>
@@ -66,11 +80,24 @@ export default function EmployeeDashboard() {
               <StatusBadge status={goal.status} />
             </CardHeader>
             <CardContent>
-              <p className="mb-4 text-sm leading-relaxed">{goal.description}</p>
-              <div className="flex gap-2">
+              <p className="mb-3 text-sm leading-relaxed">{goal.description}</p>
+
+              {/* Rejection comment from manager */}
+              {goal.rejectionComment && (
+                <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950">
+                  <p className="mb-1 font-medium text-amber-800 dark:text-amber-300">Manager feedback:</p>
+                  <p className="text-amber-700 dark:text-amber-400">{goal.rejectionComment}</p>
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-2">
                 <Button asChild size="icon" variant="outline" disabled={goal.status !== "DRAFT"}><Link href={`/employee/goals/${goal.id}/edit`}><Edit className="h-4 w-4" /></Link></Button>
                 <Button size="icon" variant="destructive" disabled={goal.status !== "DRAFT"} onClick={() => deleteGoal(goal.id)}><Trash2 className="h-4 w-4" /></Button>
-                {goal.isShared && <span className="rounded-md border px-2 py-1 text-xs text-muted-foreground">Read-only target</span>}
+                {goal.isShared && (
+                  <span className="flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-muted-foreground">
+                    <Share2 className="h-3 w-3" />Shared — weightage only
+                  </span>
+                )}
               </div>
             </CardContent>
           </Card>

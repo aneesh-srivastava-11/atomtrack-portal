@@ -27,6 +27,9 @@ export interface Goal {
   weightage: number;
   status: GoalStatus;
   isShared: boolean;
+  rejectionComment?: string | null;
+  primaryOwnerId?: string;
+  sharedWith?: string[];
   checkIns?: CheckIn[];
 }
 
