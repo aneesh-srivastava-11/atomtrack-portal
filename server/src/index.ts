@@ -14,9 +14,10 @@ import { errorHandler } from "./utils/errors.js";
 const app = express();
 const port = Number(process.env.PORT || 5000);
 
+app.disable("x-powered-by");
 app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:3000", credentials: true }));
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
