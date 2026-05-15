@@ -1,0 +1,108 @@
+CREATE TYPE "Role" AS ENUM ('EMPLOYEE', 'MANAGER', 'ADMIN');
+CREATE TYPE "GoalUom" AS ENUM ('MIN_NUMERIC', 'MAX_NUMERIC', 'MIN_PERCENTAGE', 'MAX_PERCENTAGE', 'TIMELINE', 'ZERO_BASED');
+CREATE TYPE "GoalStatus" AS ENUM ('DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED', 'LOCKED');
+CREATE TYPE "Quarter" AS ENUM ('Q1', 'Q2', 'Q3', 'Q4');
+CREATE TYPE "ProgressStatus" AS ENUM ('NOT_STARTED', 'ON_TRACK', 'COMPLETED');
+CREATE TYPE "ThrustArea" AS ENUM ('SALES', 'OPERATIONS', 'INNOVATION', 'CUSTOMER_SUCCESS', 'PEOPLE', 'FINANCE', 'COMPLIANCE', 'TECHNOLOGY');
+
+CREATE TABLE "User" (
+  "id" TEXT NOT NULL,
+  "email" TEXT NOT NULL,
+  "password" TEXT NOT NULL,
+  "name" TEXT NOT NULL,
+  "role" "Role" NOT NULL DEFAULT 'EMPLOYEE',
+  "managerId" TEXT,
+  "azureId" TEXT,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+  CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "Cycle" (
+  "id" TEXT NOT NULL,
+  "name" TEXT NOT NULL,
+  "year" INTEGER NOT NULL,
+  "startDate" TIMESTAMP(3) NOT NULL,
+  "q1Window" TIMESTAMP(3) NOT NULL,
+  "q2Window" TIMESTAMP(3) NOT NULL,
+  "q3Window" TIMESTAMP(3) NOT NULL,
+  "q4Window" TIMESTAMP(3) NOT NULL,
+  "active" BOOLEAN NOT NULL DEFAULT false,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+  CONSTRAINT "Cycle_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "GoalSheet" (
+  "id" TEXT NOT NULL,
+  "userId" TEXT NOT NULL,
+  "cycleId" TEXT NOT NULL,
+  "submittedAt" TIMESTAMP(3),
+  "approvedAt" TIMESTAMP(3),
+  "approvedBy" TEXT,
+  "locked" BOOLEAN NOT NULL DEFAULT false,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+  CONSTRAINT "GoalSheet_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "Goal" (
+  "id" TEXT NOT NULL,
+  "userId" TEXT NOT NULL,
+  "goalSheetId" TEXT NOT NULL,
+  "title" TEXT NOT NULL,
+  "description" TEXT NOT NULL,
+  "thrustArea" "ThrustArea" NOT NULL,
+  "uom" "GoalUom" NOT NULL,
+  "target" DOUBLE PRECISION NOT NULL,
+  "weightage" INTEGER NOT NULL,
+  "status" "GoalStatus" NOT NULL DEFAULT 'DRAFT',
+  "isShared" BOOLEAN NOT NULL DEFAULT false,
+  "primaryOwnerId" TEXT,
+  "sharedWith" TEXT[] DEFAULT ARRAY[]::TEXT[],
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+  CONSTRAINT "Goal_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "CheckIn" (
+  "id" TEXT NOT NULL,
+  "goalId" TEXT NOT NULL,
+  "userId" TEXT NOT NULL,
+  "quarter" "Quarter" NOT NULL,
+  "plannedTarget" DOUBLE PRECISION NOT NULL,
+  "actualAchievement" DOUBLE PRECISION,
+  "progressStatus" "ProgressStatus" NOT NULL DEFAULT 'NOT_STARTED',
+  "managerComment" TEXT,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+  CONSTRAINT "CheckIn_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "AuditLog" (
+  "id" TEXT NOT NULL,
+  "goalId" TEXT,
+  "userId" TEXT NOT NULL,
+  "action" TEXT NOT NULL,
+  "oldValue" JSONB,
+  "newValue" JSONB,
+  "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "AuditLog_pkey" PRIMARY KEY ("id")
+);
+
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+CREATE UNIQUE INDEX "User_azureId_key" ON "User"("azureId");
+CREATE UNIQUE INDEX "GoalSheet_userId_cycleId_key" ON "GoalSheet"("userId", "cycleId");
+CREATE UNIQUE INDEX "CheckIn_goalId_quarter_key" ON "CheckIn"("goalId", "quarter");
+
+ALTER TABLE "User" ADD CONSTRAINT "User_managerId_fkey" FOREIGN KEY ("managerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "GoalSheet" ADD CONSTRAINT "GoalSheet_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "GoalSheet" ADD CONSTRAINT "GoalSheet_cycleId_fkey" FOREIGN KEY ("cycleId") REFERENCES "Cycle"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "GoalSheet" ADD CONSTRAINT "GoalSheet_approvedBy_fkey" FOREIGN KEY ("approvedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Goal" ADD CONSTRAINT "Goal_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Goal" ADD CONSTRAINT "Goal_goalSheetId_fkey" FOREIGN KEY ("goalSheetId") REFERENCES "GoalSheet"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Goal" ADD CONSTRAINT "Goal_primaryOwnerId_fkey" FOREIGN KEY ("primaryOwnerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "CheckIn" ADD CONSTRAINT "CheckIn_goalId_fkey" FOREIGN KEY ("goalId") REFERENCES "Goal"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "CheckIn" ADD CONSTRAINT "CheckIn_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_goalId_fkey" FOREIGN KEY ("goalId") REFERENCES "Goal"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

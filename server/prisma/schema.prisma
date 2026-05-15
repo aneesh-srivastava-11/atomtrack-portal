@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  EMPLOYEE
+  MANAGER
+  ADMIN
+}
+
+enum GoalUom {
+  MIN_NUMERIC
+  MAX_NUMERIC
+  MIN_PERCENTAGE
+  MAX_PERCENTAGE
+  TIMELINE
+  ZERO_BASED
+}
+
+enum GoalStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  LOCKED
+}
+
+enum Quarter {
+  Q1
+  Q2
+  Q3
+  Q4
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  ON_TRACK
+  COMPLETED
+}
+
+enum ThrustArea {
+  SALES
+  OPERATIONS
+  INNOVATION
+  CUSTOMER_SUCCESS
+  PEOPLE
+  FINANCE
+  COMPLIANCE
+  TECHNOLOGY
+}
+
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  password     String
+  name         String
+  role         Role        @default(EMPLOYEE)
+  managerId    String?
+  manager      User?       @relation("ManagerHierarchy", fields: [managerId], references: [id])
+  reports      User[]      @relation("ManagerHierarchy")
+  azureId      String?     @unique
+  goals        Goal[]      @relation("GoalOwner")
+  primaryGoals Goal[]      @relation("PrimaryOwner")
+  goalSheets   GoalSheet[]
+  checkIns     CheckIn[]
+  auditLogs    AuditLog[]
+  approvals    GoalSheet[] @relation("GoalSheetApprover")
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Goal {
+  id             String      @id @default(cuid())
+  userId         String
+  user           User        @relation("GoalOwner", fields: [userId], references: [id], onDelete: Cascade)
+  goalSheetId    String
+  goalSheet      GoalSheet   @relation(fields: [goalSheetId], references: [id], onDelete: Cascade)
+  title          String
+  description    String
+  thrustArea     ThrustArea
+  uom            GoalUom
+  target         Float
+  weightage      Int
+  status         GoalStatus  @default(DRAFT)
+  isShared       Boolean     @default(false)
+  primaryOwnerId String?
+  primaryOwner   User?       @relation("PrimaryOwner", fields: [primaryOwnerId], references: [id])
+  sharedWith     String[]    @default([])
+  checkIns       CheckIn[]
+  auditLogs      AuditLog[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+}
+
+model GoalSheet {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cycleId     String
+  cycle       Cycle     @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  submittedAt DateTime?
+  approvedAt  DateTime?
+  approvedBy  String?
+  approver    User?     @relation("GoalSheetApprover", fields: [approvedBy], references: [id])
+  locked      Boolean   @default(false)
+  goals       Goal[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([userId, cycleId])
+}
+
+model CheckIn {
+  id                String         @id @default(cuid())
+  goalId            String
+  goal              Goal           @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quarter           Quarter
+  plannedTarget     Float
+  actualAchievement Float?
+  progressStatus    ProgressStatus @default(NOT_STARTED)
+  managerComment    String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@unique([goalId, quarter])
+}
+
+model Cycle {
+  id        String      @id @default(cuid())
+  name      String
+  year      Int
+  startDate DateTime
+  q1Window  DateTime
+  q2Window  DateTime
+  q3Window  DateTime
+  q4Window  DateTime
+  active    Boolean     @default(false)
+  sheets    GoalSheet[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  goalId    String?
+  goal      Goal?    @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String
+  oldValue  Json?
+  newValue  Json?
+  timestamp DateTime @default(now())
+}
