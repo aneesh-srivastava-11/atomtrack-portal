@@ -113,3 +113,23 @@ export const createSharedGoal = asyncHandler(async (req, res) => {
   const goals = await pushSharedGoal(primaryOwnerId, recipientIds, goalData);
   res.status(201).json(goals);
 });
+
+/** Org-wide audit trail — most recent 200 entries */
+export const allAuditLogs = asyncHandler(async (_req, res) => {
+  const logs = await prisma.auditLog.findMany({
+    include: { user: true, goal: true },
+    orderBy: { timestamp: "desc" },
+    take: 200
+  });
+  res.json(logs);
+});
+
+/** All approved/locked goals for the unlock page */
+export const lockedGoals = asyncHandler(async (_req, res) => {
+  const goals = await prisma.goal.findMany({
+    where: { status: "APPROVED" },
+    include: { user: true, goalSheet: true },
+    orderBy: { updatedAt: "desc" }
+  });
+  res.json(goals);
+});

@@ -19,12 +19,34 @@ export default function CreateGoalPage() {
   const [step, setStep] = useState(1);
   const [values, setValues] = useState({ thrustArea: "SALES", uom: "MIN_NUMERIC" });
   const [weightage, setWeightage] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
   const isValidWeightage = weightage >= 10 && weightage <= 100;
 
   async function onSubmit(formData: FormData) {
-    const body = { ...values, ...Object.fromEntries(formData), target: Number(formData.get("target")), weightage: Number(formData.get("weightage")) };
-    await api.post("/api/goals", body);
-    router.push("/employee");
+    setError(null);
+    setLoading(true);
+    try {
+      const body = {
+        title: String(formData.get("title")),
+        description: String(formData.get("description")),
+        thrustArea: values.thrustArea,
+        uom: values.uom,
+        target: Number(formData.get("target")),
+        weightage: Number(formData.get("weightage")),
+      };
+
+      await api.post("/api/goals", body);
+      router.push("/employee");
+      router.refresh();
+    } catch (err: any) {
+      const msg = err.response?.data?.error?.message || "Failed to create goal. Please check all fields.";
+      setError(msg);
+      console.error("Create goal error:", err.response?.data);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -37,6 +59,12 @@ export default function CreateGoalPage() {
         </div>
       </CardHeader>
       <CardContent>
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <span>{error}</span>
+          </Alert>
+        )}
         <form action={onSubmit} className="grid gap-4">
           {step === 1 && (
             <>
@@ -66,7 +94,7 @@ export default function CreateGoalPage() {
           {step === 3 && (
             <>
               <Label>Target<Input name="target" type="number" min="0" step="0.01" className="mt-2" required /></Label>
-              <Label>Weightage<Input name="weightage" type="number" min="10" max="100" className="mt-2" onChange={(event) => setWeightage(Number(event.target.value))} required /></Label>
+              <Label>Weightage<Input name="weightage" type="number" min="1" max="100" className="mt-2" onChange={(event) => setWeightage(Number(event.target.value))} required /></Label>
               <Alert className={isValidWeightage ? "border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300" : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300"}>
                 <span className="flex items-center gap-2">
                   {isValidWeightage ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
@@ -75,7 +103,7 @@ export default function CreateGoalPage() {
               </Alert>
               <div className="flex gap-2">
                 <Button type="button" variant="outline" onClick={() => setStep(2)}>Back</Button>
-                <Button disabled={!isValidWeightage} title={isValidWeightage ? "Create goal" : "Enter a weightage from 10 to 100"}>Create goal</Button>
+                <Button disabled={!isValidWeightage || loading}>{loading ? "Creating..." : "Create goal"}</Button>
               </div>
             </>
           )}

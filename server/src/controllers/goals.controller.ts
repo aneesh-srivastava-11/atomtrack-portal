@@ -3,12 +3,24 @@ import { prisma } from "../utils/prisma.js";
 import { AppError, asyncHandler } from "../utils/errors.js";
 import { assertGoalEditable, getOrCreateGoalSheet, validateGoalCreation } from "../services/goal.service.js";
 
+/** Whitelist of fields an employee may set when creating or updating a goal. */
+const ALLOWED_GOAL_FIELDS = ["title", "description", "thrustArea", "uom", "target", "weightage"] as const;
+
+function pickAllowed(body: Record<string, unknown>) {
+  const data: Record<string, unknown> = {};
+  for (const key of ALLOWED_GOAL_FIELDS) {
+    if (body[key] !== undefined) data[key] = body[key];
+  }
+  return data;
+}
+
 export const createGoal = asyncHandler(async (req, res) => {
   const userId = req.user!.id;
   const sheet = await validateGoalCreation(userId, req.body.weightage);
   if (sheet.locked) throw new AppError("Goal sheet is locked", 400);
+  const data = pickAllowed(req.body);
   const goal = await prisma.goal.create({
-    data: { ...req.body, userId, goalSheetId: sheet.id, primaryOwnerId: req.body.primaryOwnerId || userId }
+    data: { ...data, userId, goalSheetId: sheet.id, primaryOwnerId: userId } as any
   });
   res.status(201).json(goal);
 });
@@ -46,9 +58,11 @@ export const updateGoal = asyncHandler(async (req, res) => {
     return res.json(updated);
   }
 
+  // Whitelist fields — prevent setting status, userId, goalSheetId, etc.
+  const data = pickAllowed(req.body);
+
   // Clear rejection comment when employee re-edits a previously rejected goal
-  const data = { ...req.body };
-  if (goal.rejectionComment) data.rejectionComment = null;
+  if (goal.rejectionComment) (data as any).rejectionComment = null;
 
   const updated = await prisma.goal.update({ where: { id }, data });
   res.json(updated);
