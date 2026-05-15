@@ -6,7 +6,7 @@ import { assertGoalEditable, getOrCreateGoalSheet, validateGoalCreation } from "
 export const createGoal = asyncHandler(async (req, res) => {
   const userId = req.user!.id;
   const sheet = await validateGoalCreation(userId, req.body.weightage);
-  if (sheet.locked) throw new AppError("Goal is locked", 400);
+  if (sheet.locked) throw new AppError("Goal sheet is locked", 400);
   const goal = await prisma.goal.create({
     data: { ...req.body, userId, goalSheetId: sheet.id, primaryOwnerId: req.body.primaryOwnerId || userId }
   });
@@ -37,7 +37,20 @@ export const updateGoal = asyncHandler(async (req, res) => {
   const goal = await prisma.goal.findUnique({ where: { id }, include: { goalSheet: true } });
   if (!goal || goal.userId !== req.user!.id) throw new AppError("Goal not found", 404);
   await assertGoalEditable(goal);
-  const updated = await prisma.goal.update({ where: { id }, data: req.body });
+
+  // Shared goal guard: recipients can only change weightage
+  if (goal.isShared && goal.primaryOwnerId !== req.user!.id) {
+    const { weightage } = req.body;
+    if (weightage == null) throw new AppError("Shared goals only allow weightage changes", 400);
+    const updated = await prisma.goal.update({ where: { id }, data: { weightage } });
+    return res.json(updated);
+  }
+
+  // Clear rejection comment when employee re-edits a previously rejected goal
+  const data = { ...req.body };
+  if (goal.rejectionComment) data.rejectionComment = null;
+
+  const updated = await prisma.goal.update({ where: { id }, data });
   res.json(updated);
 });
 
@@ -46,8 +59,20 @@ export const submitGoals = asyncHandler(async (req, res) => {
   const goals = await prisma.goal.findMany({ where: { goalSheetId: sheet.id } });
   const total = goals.reduce((sum, goal) => sum + goal.weightage, 0);
   if (total !== 100) throw new AppError("Total must equal 100%", 400);
-  await prisma.goal.updateMany({ where: { goalSheetId: sheet.id }, data: { status: GoalStatus.SUBMITTED } });
-  const updated = await prisma.goalSheet.update({ where: { id: sheet.id }, data: { submittedAt: new Date() }, include: { goals: true } });
+
+  // Only submit goals that are in DRAFT status (skip already approved ones in case of partial rework)
+  const draftGoalIds = goals.filter((g) => g.status === GoalStatus.DRAFT).map((g) => g.id);
+  if (draftGoalIds.length === 0) throw new AppError("No draft goals to submit", 400);
+
+  await prisma.goal.updateMany({
+    where: { id: { in: draftGoalIds } },
+    data: { status: GoalStatus.SUBMITTED, rejectionComment: null }
+  });
+  const updated = await prisma.goalSheet.update({
+    where: { id: sheet.id },
+    data: { submittedAt: new Date() },
+    include: { goals: true }
+  });
   res.json(updated);
 });
 

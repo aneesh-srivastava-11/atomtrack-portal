@@ -75,26 +75,27 @@ model User {
 }
 
 model Goal {
-  id             String      @id @default(cuid())
-  userId         String
-  user           User        @relation("GoalOwner", fields: [userId], references: [id], onDelete: Cascade)
-  goalSheetId    String
-  goalSheet      GoalSheet   @relation(fields: [goalSheetId], references: [id], onDelete: Cascade)
-  title          String
-  description    String
-  thrustArea     ThrustArea
-  uom            GoalUom
-  target         Float
-  weightage      Int
-  status         GoalStatus  @default(DRAFT)
-  isShared       Boolean     @default(false)
-  primaryOwnerId String?
-  primaryOwner   User?       @relation("PrimaryOwner", fields: [primaryOwnerId], references: [id])
-  sharedWith     String[]    @default([])
-  checkIns       CheckIn[]
-  auditLogs      AuditLog[]
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  id               String      @id @default(cuid())
+  userId           String
+  user             User        @relation("GoalOwner", fields: [userId], references: [id], onDelete: Cascade)
+  goalSheetId      String
+  goalSheet        GoalSheet   @relation(fields: [goalSheetId], references: [id], onDelete: Cascade)
+  title            String
+  description      String
+  thrustArea       ThrustArea
+  uom              GoalUom
+  target           Float
+  weightage        Int
+  status           GoalStatus  @default(DRAFT)
+  rejectionComment String?
+  isShared         Boolean     @default(false)
+  primaryOwnerId   String?
+  primaryOwner     User?       @relation("PrimaryOwner", fields: [primaryOwnerId], references: [id])
+  sharedWith       String[]    @default([])
+  checkIns         CheckIn[]
+  auditLogs        AuditLog[]
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 }
 
 model GoalSheet {

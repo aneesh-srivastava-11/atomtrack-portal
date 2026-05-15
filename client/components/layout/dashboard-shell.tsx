@@ -59,7 +59,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button variant="outline" onClick={logout}>Logout</Button>
+            <Button variant="outline" onClick={() => { logout(); window.location.href = "/login"; }}>Logout</Button>
           </div>
         </header>
         <div className="p-5">{children}</div>
