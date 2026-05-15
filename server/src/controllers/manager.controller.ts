@@ -1,6 +1,7 @@
 import { GoalStatus } from "@prisma/client";
 import { prisma } from "../utils/prisma.js";
 import { AppError, asyncHandler } from "../utils/errors.js";
+import { sendNotification } from "../services/email.service.js";
 
 export const teamGoals = asyncHandler(async (req, res) => {
   const sheets = await prisma.goalSheet.findMany({
@@ -37,6 +38,17 @@ export const approveGoal = asyncHandler(async (req, res) => {
 
     return approved;
   });
+
+  // Email notification to employee
+  const employee = await prisma.user.findUnique({ where: { id: goal.userId } });
+  if (employee) {
+    sendNotification(
+      employee.email,
+      "Your goals have been approved",
+      `Hi ${employee.name}, your goal "${goal.title}" has been approved by ${req.user!.name}.`
+    );
+  }
+
   res.json(updated);
 });
 
@@ -66,6 +78,17 @@ export const rejectGoal = asyncHandler(async (req, res) => {
 
     return rejected;
   });
+
+  // Email notification to employee
+  const employee = await prisma.user.findUnique({ where: { id: goal.userId } });
+  if (employee) {
+    sendNotification(
+      employee.email,
+      "Goal returned for rework",
+      `Hi ${employee.name}, your goal "${goal.title}" was returned for rework by ${req.user!.name}. Feedback: ${comment || 'No comment provided.'}`
+    );
+  }
+
   res.json(updated);
 });
 

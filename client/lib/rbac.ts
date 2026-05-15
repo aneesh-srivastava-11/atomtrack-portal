@@ -1,5 +1,5 @@
 import type { Role } from "./types";
-import { BarChart3, ClipboardCheck, FileDown, Home, Lock, Settings, Shield, ShieldCheck, Users } from "lucide-react";
+import { BarChart3, Bell, ClipboardCheck, FileDown, Home, Lock, Settings, Shield, ShieldCheck, TrendingUp, Users } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /*  Navigation items — each item declares which roles may see it      */
@@ -31,6 +31,8 @@ export const navItems: NavItem[] = [
   { href: "/admin/reports",         label: "Export Reports",        icon: FileDown,       roles: ["ADMIN"],             group: "Admin" },
   { href: "/admin/audit-logs",      label: "Audit Trail",           icon: Shield,         roles: ["ADMIN"],             group: "Admin" },
   { href: "/admin/unlock",          label: "Goal Unlock",           icon: Lock,           roles: ["ADMIN"],             group: "Admin" },
+  { href: "/admin/analytics",       label: "Analytics",             icon: TrendingUp,     roles: ["ADMIN"],             group: "Admin" },
+  { href: "/admin/escalations",     label: "Escalations",           icon: Bell,           roles: ["ADMIN"],             group: "Admin" },
 ];
 
 /* ------------------------------------------------------------------ */

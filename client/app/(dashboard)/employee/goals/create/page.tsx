@@ -60,7 +60,7 @@ export default function CreateGoalPage() {
       </CardHeader>
       <CardContent>
         {error && (
-          <Alert variant="destructive" className="mb-4">
+          <Alert className="mb-4 border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
             <AlertCircle className="h-4 w-4" />
             <span>{error}</span>
           </Alert>
