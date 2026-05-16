@@ -10,11 +10,16 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function EmployeeDashboard() {
   const { goals, totalWeightage, setGoals, removeGoal } = useGoalStore();
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    api.get("/api/goals").then(({ data }) => setGoals(data)).catch(() => setGoals([]));
+    api.get("/api/goals")
+      .then(({ data }) => { setGoals(data); setLoading(false); })
+      .catch(() => { setGoals([]); setLoading(false); });
   }, [setGoals]);
 
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -74,52 +79,70 @@ export default function EmployeeDashboard() {
       )}
       <Card>
         <CardContent className="grid gap-3 p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">Weightage assigned</p>
-              <p className="text-xs text-muted-foreground">Submit is available only at exactly 100%.</p>
+          {loading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-[150px]" />
+              <Skeleton className="h-4 w-full" />
             </div>
-            <p className="text-3xl font-semibold">{totalWeightage}<span className="text-base text-muted-foreground">/100</span></p>
-          </div>
-          <Progress value={Math.min(totalWeightage, 100)} />
-          {totalWeightage !== 100 && <Alert>Total must equal 100% before you submit for approval.</Alert>}
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Weightage assigned</p>
+                  <p className="text-xs text-muted-foreground">Submit is available only at exactly 100%.</p>
+                </div>
+                <p className="text-3xl font-semibold">{totalWeightage}<span className="text-base text-muted-foreground">/100</span></p>
+              </div>
+              <Progress value={Math.min(totalWeightage, 100)} />
+              {totalWeightage !== 100 && <Alert>Total must equal 100% before you submit for approval.</Alert>}
+            </>
+          )}
         </CardContent>
       </Card>
 
       <div className="grid gap-3 lg:grid-cols-2">
-        {goals.map((goal) => (
-          <Card key={goal.id} className={goal.rejectionComment ? "border-amber-300 dark:border-amber-700" : ""}>
-            <CardHeader className="flex-row items-start justify-between">
-              <div>
-                <CardTitle>{goal.title}</CardTitle>
-                <p className="mt-1 text-sm text-muted-foreground">{goal.thrustArea} | Target {goal.target} | {goal.weightage}%</p>
-              </div>
-              <StatusBadge status={goal.status} />
-            </CardHeader>
-            <CardContent>
-              <p className="mb-3 text-sm leading-relaxed">{goal.description}</p>
+        {loading ? (
+          <>
+            <Skeleton className="h-[200px] w-full rounded-xl" />
+            <Skeleton className="h-[200px] w-full rounded-xl" />
+          </>
+        ) : (
+          <>
+            {goals.map((goal) => (
+              <Card key={goal.id} className={goal.rejectionComment ? "border-amber-300 dark:border-amber-700" : ""}>
+                <CardHeader className="flex-row items-start justify-between">
+                  <div>
+                    <CardTitle>{goal.title}</CardTitle>
+                    <p className="mt-1 text-sm text-muted-foreground">{goal.thrustArea} | Target {goal.target} | {goal.weightage}%</p>
+                  </div>
+                  <StatusBadge status={goal.status} />
+                </CardHeader>
+                <CardContent>
+                  <p className="mb-3 text-sm leading-relaxed">{goal.description}</p>
 
-              {/* Rejection comment from manager */}
-              {goal.rejectionComment && (
-                <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950">
-                  <p className="mb-1 font-medium text-amber-800 dark:text-amber-300">Manager feedback:</p>
-                  <p className="text-amber-700 dark:text-amber-400">{goal.rejectionComment}</p>
-                </div>
-              )}
+                  {/* Rejection comment from manager */}
+                  {goal.rejectionComment && (
+                    <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950">
+                      <p className="mb-1 font-medium text-amber-800 dark:text-amber-300">Manager feedback:</p>
+                      <p className="text-amber-700 dark:text-amber-400">{goal.rejectionComment}</p>
+                    </div>
+                  )}
 
-              <div className="flex flex-wrap gap-2">
-                <Button asChild size="icon" variant="outline" disabled={goal.status !== "DRAFT"}><Link href={`/employee/goals/${goal.id}/edit`}><Edit className="h-4 w-4" /></Link></Button>
-                <Button size="icon" variant="destructive" disabled={goal.status !== "DRAFT"} onClick={() => deleteGoal(goal.id)}><Trash2 className="h-4 w-4" /></Button>
-                {goal.isShared && (
-                  <span className="flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-muted-foreground">
-                    <Share2 className="h-3 w-3" />Shared — weightage only
-                  </span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        {!goals.length && <Card><CardContent className="p-8 text-sm text-muted-foreground">No goals yet. Create your first quarterly goal to begin.</CardContent></Card>}
+                  <div className="flex flex-wrap gap-2">
+                    <Button asChild size="icon" variant="outline" disabled={goal.status !== "DRAFT"}><Link href={`/employee/goals/${goal.id}/edit`}><Edit className="h-4 w-4" /></Link></Button>
+                    <Button size="icon" variant="destructive" disabled={goal.status !== "DRAFT"} onClick={() => deleteGoal(goal.id)}><Trash2 className="h-4 w-4" /></Button>
+                    {goal.isShared && (
+                      <span className="flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-muted-foreground">
+                        <Share2 className="h-3 w-3" />Shared — weightage only
+                      </span>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            {!goals.length && <Card className="lg:col-span-2"><CardContent className="p-8 text-center text-sm text-muted-foreground">No goals yet. Create your first quarterly goal to begin.</CardContent></Card>}
+          </>
+        )}
       </div>
     </section>
   );
