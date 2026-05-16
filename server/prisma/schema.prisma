@@ -73,6 +73,8 @@ model User {
   escalationLogs EscalationLog[]
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
+
+  @@index([managerId])
 }
 
 model Goal {
@@ -97,6 +99,10 @@ model Goal {
   auditLogs        AuditLog[]
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([goalSheetId])
+  @@index([status])
 }
 
 model GoalSheet {
@@ -132,6 +138,8 @@ model CheckIn {
   updatedAt         DateTime       @updatedAt
 
   @@unique([goalId, quarter])
+  @@index([userId])
+  @@index([goalId])
 }
 
 model Cycle {
@@ -159,6 +167,9 @@ model AuditLog {
   oldValue  Json?
   newValue  Json?
   timestamp DateTime @default(now())
+
+  @@index([goalId])
+  @@index([userId])
 }
 
 model EscalationRule {
