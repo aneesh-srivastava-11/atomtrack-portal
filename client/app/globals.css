@@ -11,10 +11,10 @@
     --muted: 240 5% 92%;
     --muted-foreground: 240 4% 42%;
     --border: 240 6% 84%;
-    --primary: 221 83% 53%;
+    --primary: 221 83% 45%; /* Darkened for white text contrast */
     --primary-foreground: 0 0% 100%;
     --destructive: 0 70% 45%;
-    --ring: 221 83% 53%;
+    --ring: 221 83% 45%;
   }
 
   .dark {
@@ -26,7 +26,7 @@
     --muted-foreground: 240 5% 68%;
     --border: 240 5% 22%;
     --primary: 221 83% 58%;
-    --primary-foreground: 0 0% 100%;
+    --primary-foreground: 221 83% 10%; /* Dark text on light blue primary for contrast */
     --destructive: 0 68% 52%;
     --ring: 221 83% 58%;
   }
