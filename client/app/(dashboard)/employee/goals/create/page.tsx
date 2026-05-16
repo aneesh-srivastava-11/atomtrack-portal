@@ -17,24 +17,31 @@ const uoms = ["MIN_NUMERIC", "MAX_NUMERIC", "MIN_PERCENTAGE", "MAX_PERCENTAGE", 
 export default function CreateGoalPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
-  const [values, setValues] = useState({ thrustArea: "SALES", uom: "MIN_NUMERIC" });
-  const [weightage, setWeightage] = useState(0);
+  const [values, setValues] = useState({ 
+    title: "", 
+    description: "", 
+    thrustArea: "SALES", 
+    uom: "MIN_NUMERIC", 
+    target: "", 
+    weightage: 0 
+  });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const isValidWeightage = weightage >= 10 && weightage <= 100;
+  const isValidWeightage = values.weightage >= 10 && values.weightage <= 100;
 
-  async function onSubmit(formData: FormData) {
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
     setError(null);
     setLoading(true);
     try {
       const body = {
-        title: String(formData.get("title")),
-        description: String(formData.get("description")),
+        title: values.title,
+        description: values.description,
         thrustArea: values.thrustArea,
         uom: values.uom,
-        target: Number(formData.get("target")),
-        weightage: Number(formData.get("weightage")),
+        target: Number(values.target),
+        weightage: Number(values.weightage),
       };
 
       await api.post("/api/goals", body);
@@ -66,11 +73,11 @@ export default function CreateGoalPage() {
             <span>{error}</span>
           </Alert>
         )}
-        <form action={onSubmit} className="grid gap-4">
+        <form onSubmit={onSubmit} className="grid gap-4">
           {step === 1 && (
             <>
-              <Label>Goal title<Input name="title" className="mt-2" placeholder="Increase renewal coverage" required /></Label>
-              <Label>Description<Input name="description" className="mt-2" placeholder="Describe the outcome and how it will be measured." required /></Label>
+              <Label>Goal title<Input value={values.title} onChange={e => setValues({...values, title: e.target.value})} className="mt-2" placeholder="Increase renewal coverage" required /></Label>
+              <Label>Description<Input value={values.description} onChange={e => setValues({...values, description: e.target.value})} className="mt-2" placeholder="Describe the outcome and how it will be measured." required /></Label>
               <Button type="button" onClick={() => setStep(2)}>Next</Button>
             </>
           )}
@@ -94,12 +101,12 @@ export default function CreateGoalPage() {
           )}
           {step === 3 && (
             <>
-              <Label>Target<Input name="target" type="number" min="0" step="0.01" className="mt-2" required /></Label>
-              <Label>Weightage<Input name="weightage" type="number" min="1" max="100" className="mt-2" onChange={(event) => setWeightage(Number(event.target.value))} required /></Label>
+              <Label>Target<Input value={values.target} onChange={e => setValues({...values, target: e.target.value})} type="number" min="0" step="0.01" className="mt-2" required /></Label>
+              <Label>Weightage<Input value={values.weightage || ""} onChange={e => setValues({...values, weightage: Number(e.target.value)})} type="number" min="1" max="100" className="mt-2" required /></Label>
               <Alert className={isValidWeightage ? "border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300" : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300"}>
                 <span className="flex items-center gap-2">
                   {isValidWeightage ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-                  {isValidWeightage ? `${weightage}% weightage will be assigned to this goal.` : "Weightage must be between 10% and 100%."}
+                  {isValidWeightage ? `${values.weightage}% weightage will be assigned to this goal.` : "Weightage must be between 10% and 100%."}
                 </span>
               </Alert>
               <div className="flex gap-2">
