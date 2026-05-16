@@ -3,7 +3,10 @@ import { AppError, asyncHandler } from "../utils/errors.js";
 import { pushSharedGoal } from "../services/shared.service.js";
 
 export const createCycle = asyncHandler(async (req, res) => {
-  const cycle = await prisma.cycle.create({ data: req.body });
+  const { name, year, startDate, q1Window, q2Window, q3Window, q4Window } = req.body;
+  const cycle = await prisma.cycle.create({
+    data: { name, year: Number(year), startDate: new Date(startDate), q1Window: new Date(q1Window), q2Window: new Date(q2Window), q3Window: new Date(q3Window), q4Window: new Date(q4Window) }
+  });
   res.status(201).json(cycle);
 });
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { AlertCircle, Edit, Plus, Send, Share2, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useGoalStore } from "@/stores/goalStore";
@@ -17,15 +17,23 @@ export default function EmployeeDashboard() {
     api.get("/api/goals").then(({ data }) => setGoals(data)).catch(() => setGoals([]));
   }, [setGoals]);
 
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
   async function deleteGoal(id: string) {
+    if (!confirm("Delete this goal? This cannot be undone.")) return;
     await api.delete(`/api/goals/${id}`);
     removeGoal(id);
   }
 
   async function submit() {
-    await api.post("/api/goals/submit");
-    const { data } = await api.get("/api/goals");
-    setGoals(data);
+    setSubmitError(null);
+    try {
+      await api.post("/api/goals/submit");
+      const { data } = await api.get("/api/goals");
+      setGoals(data);
+    } catch (err: any) {
+      setSubmitError(err.response?.data?.error?.message || "Submission failed. Check that total weightage = 100%.");
+    }
   }
 
   const hasDrafts = goals.some((g) => g.status === "DRAFT");
@@ -55,6 +63,14 @@ export default function EmployeeDashboard() {
         </Alert>
       )}
 
+      {submitError && (
+        <Alert className="border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+          <span className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            {submitError}
+          </span>
+        </Alert>
+      )}
       <Card>
         <CardContent className="grid gap-3 p-5">
           <div className="flex items-center justify-between">
