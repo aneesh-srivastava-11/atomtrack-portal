@@ -9,6 +9,8 @@ import managerRoutes from "./routes/manager.routes.js";
 import checkInsRoutes from "./routes/checkins.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import reportsRoutes from "./routes/reports.routes.js";
+import analyticsRoutes from "./routes/analytics.routes.js";
+import escalationRoutes from "./routes/escalation.routes.js";
 import { errorHandler } from "./utils/errors.js";
 
 const app = express();
@@ -27,6 +29,8 @@ app.use("/api/manager", managerRoutes);
 app.use("/api/checkins", checkInsRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/reports", reportsRoutes);
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/escalations", escalationRoutes);
 app.use(errorHandler);
 
 app.listen(port, () => {

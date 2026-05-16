@@ -12,21 +12,28 @@ export default function ManagerDashboard() {
   useEffect(() => { api.get("/api/manager/team-goals").then(({ data }) => setSheets(data)); }, []);
   return (
     <Card>
-      <CardHeader><CardTitle>Team dashboard</CardTitle></CardHeader>
+      <CardHeader>
+        <CardTitle>Team dashboard</CardTitle>
+        <p className="mt-1 text-sm text-muted-foreground">Overview of your direct reports and their goal sheet statuses.</p>
+      </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader><TableRow><TableHead>Employee</TableHead><TableHead>Goals</TableHead><TableHead>Weightage</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
-          <TableBody>
-            {sheets.map((sheet) => (
-              <TableRow key={sheet.id}>
-                <TableCell>{sheet.user.name}</TableCell>
-                <TableCell>{sheet.goals.length}</TableCell>
-                <TableCell>{sheet.goals.reduce((sum, goal) => sum + goal.weightage, 0)}%</TableCell>
-                <TableCell><Badge>{sheet.locked ? "APPROVED" : sheet.submittedAt ? "SUBMITTED" : "DRAFT"}</Badge></TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        {sheets.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">No team goals found. If you have direct reports, their goal sheets will appear here once created.</p>
+        ) : (
+          <Table>
+            <TableHeader><TableRow><TableHead>Employee</TableHead><TableHead>Goals</TableHead><TableHead>Weightage</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+            <TableBody>
+              {sheets.map((sheet) => (
+                <TableRow key={sheet.id}>
+                  <TableCell className="font-medium">{sheet.user.name}</TableCell>
+                  <TableCell>{sheet.goals.length}</TableCell>
+                  <TableCell>{sheet.goals.reduce((sum, goal) => sum + goal.weightage, 0)}%</TableCell>
+                  <TableCell><Badge variant={sheet.locked ? "default" : sheet.submittedAt ? "secondary" : "outline"}>{sheet.locked ? "APPROVED" : sheet.submittedAt ? "SUBMITTED" : "DRAFT"}</Badge></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
     </Card>
   );

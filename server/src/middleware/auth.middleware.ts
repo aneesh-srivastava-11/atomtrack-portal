@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from "express";
 import type { Role } from "@prisma/client";
 import { prisma } from "../utils/prisma.js";
 import { AppError } from "../utils/errors.js";
+import { requestContext } from "../utils/async-storage.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "";
 if (!JWT_SECRET || JWT_SECRET === "replace_with_a_long_random_secret") {
@@ -29,7 +30,11 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
     const { password: _password, ...safeUser } = user;
     req.user = safeUser;
     req.role = user.role;
-    next();
+    
+    // Set userId in async local storage so Prisma extension can read it
+    requestContext.run({ userId: user.id }, () => {
+      next();
+    });
   } catch {
     return next(new AppError("Invalid or expired token", 401));
   }

@@ -70,6 +70,7 @@ model User {
   checkIns     CheckIn[]
   auditLogs    AuditLog[]
   approvals    GoalSheet[] @relation("GoalSheetApprover")
+  escalationLogs EscalationLog[]
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 }
@@ -158,4 +159,28 @@ model AuditLog {
   oldValue  Json?
   newValue  Json?
   timestamp DateTime @default(now())
+}
+
+model EscalationRule {
+  id            String           @id @default(cuid())
+  name          String
+  triggerType   String           // GOAL_NOT_SUBMITTED | GOAL_NOT_APPROVED | CHECKIN_MISSING
+  thresholdDays Int
+  active        Boolean          @default(true)
+  logs          EscalationLog[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+model EscalationLog {
+  id         String          @id @default(cuid())
+  ruleId     String
+  rule       EscalationRule  @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  level      Int             @default(1) // 1=employee, 2=manager, 3=HR
+  status     String          @default("PENDING") // PENDING | RESOLVED
+  message    String?
+  firedAt    DateTime        @default(now())
+  resolvedAt DateTime?
 }
