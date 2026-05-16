@@ -68,7 +68,8 @@ export default function CheckInsPage() {
       const { data } = await api.get("/api/goals");
       setGoals(data);
       setSaved(goalId);
-    } catch (err: any) {
+    } catch (error) {
+      const err = error as { response?: { data?: { error?: { message?: string } } } };
       setError(err?.response?.data?.error?.message || "Failed to save check-in. The quarterly window may be closed.");
     } finally {
       setSaving(null);

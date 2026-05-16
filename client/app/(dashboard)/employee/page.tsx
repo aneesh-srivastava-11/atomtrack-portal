@@ -31,7 +31,8 @@ export default function EmployeeDashboard() {
       await api.post("/api/goals/submit");
       const { data } = await api.get("/api/goals");
       setGoals(data);
-    } catch (err: any) {
+    } catch (error) {
+      const err = error as { response?: { data?: { error?: { message?: string } } } };
       setSubmitError(err.response?.data?.error?.message || "Submission failed. Check that total weightage = 100%.");
     }
   }

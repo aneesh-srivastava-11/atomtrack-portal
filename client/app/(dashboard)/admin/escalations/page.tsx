@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertTriangle, Bell, CheckCircle2, Play, Plus, Trash2 } from "lucide-react";
+import { Bell, CheckCircle2, Play, Plus, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -99,7 +99,7 @@ export default function EscalationsPage() {
         <CardHeader><CardTitle className="text-base">Escalation Rules ({rules.length})</CardTitle></CardHeader>
         <CardContent>
           {rules.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">No rules configured. Click "New Rule" to create one.</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">No rules configured. Click &quot;New Rule&quot; to create one.</p>
           ) : (
             <Table>
               <TableHeader>
@@ -143,7 +143,7 @@ export default function EscalationsPage() {
         <CardHeader><CardTitle className="text-base">Escalation Log ({logs.length})</CardTitle></CardHeader>
         <CardContent>
           {logs.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">No escalations fired yet. Configure rules and click "Run Escalations".</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">No escalations fired yet. Configure rules and click &quot;Run Escalations&quot;.</p>
           ) : (
             <div className="max-h-[400px] overflow-auto rounded-md border">
               <Table>

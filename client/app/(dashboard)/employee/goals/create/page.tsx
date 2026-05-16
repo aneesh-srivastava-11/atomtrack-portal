@@ -40,7 +40,8 @@ export default function CreateGoalPage() {
       await api.post("/api/goals", body);
       router.push("/employee");
       router.refresh();
-    } catch (err: any) {
+    } catch (error) {
+      const err = error as { response?: { data?: { error?: { message?: string } } } };
       const msg = err.response?.data?.error?.message || "Failed to create goal. Please check all fields.";
       setError(msg);
       console.error("Create goal error:", err.response?.data);
