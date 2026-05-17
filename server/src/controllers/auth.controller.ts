@@ -13,7 +13,7 @@ function safeUser(user: { password: string; [key: string]: unknown }) {
 export const register = asyncHandler(async (req, res) => {
   // SECURITY: Only allow whitelisted fields. Role is always EMPLOYEE for self-registration.
   const { name, email, password: rawPassword } = req.body;
-  const password = await bcrypt.hash(rawPassword, 12);
+  const password = await bcrypt.hash(rawPassword, 10);
   const user = await prisma.user.create({ data: { name, email, password, role: "EMPLOYEE" } });
   const token = signToken(user.id);
   res.status(201).json({ user: safeUser(user), token });

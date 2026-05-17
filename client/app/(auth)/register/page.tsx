@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/ui/button";
@@ -12,11 +13,19 @@ import { Label } from "@/components/ui/label";
 export default function RegisterPage() {
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
+  const [isLoading, setIsLoading] = useState(false);
 
   async function onSubmit(formData: FormData) {
-    const { data } = await api.post("/api/auth/register", { ...Object.fromEntries(formData), role: "EMPLOYEE" });
-    setUser(data.user, data.token);
-    router.push("/employee");
+    setIsLoading(true);
+    try {
+      const { data } = await api.post("/api/auth/register", { ...Object.fromEntries(formData), role: "EMPLOYEE" });
+      setUser(data.user, data.token);
+      router.push("/employee");
+    } catch {
+      // Error handling can be added here if needed
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -28,7 +37,9 @@ export default function RegisterPage() {
             <Label>Name<Input name="name" className="mt-2" required /></Label>
             <Label>Email<Input name="email" type="email" className="mt-2" required /></Label>
             <Label>Password<Input name="password" type="password" className="mt-2" required /></Label>
-            <Button>Register</Button>
+            <Button disabled={isLoading}>
+              {isLoading ? "Creating account..." : "Register"}
+            </Button>
             <Link className="text-sm text-muted-foreground" href="/login">Back to login</Link>
           </form>
         </CardContent>

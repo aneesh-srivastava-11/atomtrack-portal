@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface ManagerStat {
@@ -42,7 +43,23 @@ export default function AdminCompletionPage() {
   }, []);
 
   if (!stats) {
-    return <p className="text-sm text-muted-foreground">Loading dashboard...</p>;
+    return (
+      <section className="grid gap-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="mt-2 h-4 w-96" />
+          </div>
+          <Skeleton className="h-10 w-48" />
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          <Skeleton className="h-32 w-full rounded-xl" />
+          <Skeleton className="h-32 w-full rounded-xl" />
+          <Skeleton className="h-32 w-full rounded-xl" />
+        </div>
+        <Skeleton className="h-64 w-full rounded-xl" />
+      </section>
+    );
   }
 
   const pendingApprovals = Math.max(stats.submitted - stats.approved, 0);

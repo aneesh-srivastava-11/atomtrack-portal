@@ -23,6 +23,7 @@ export default function EmployeeDashboard() {
   }, [setGoals]);
 
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function deleteGoal(id: string) {
     if (!confirm("Delete this goal? This cannot be undone.")) return;
@@ -32,6 +33,7 @@ export default function EmployeeDashboard() {
 
   async function submit() {
     setSubmitError(null);
+    setIsSubmitting(true);
     try {
       await api.post("/api/goals/submit");
       const { data } = await api.get("/api/goals");
@@ -39,6 +41,8 @@ export default function EmployeeDashboard() {
     } catch (error) {
       const err = error as { response?: { data?: { error?: { message?: string } } } };
       setSubmitError(err.response?.data?.error?.message || "Submission failed. Check that total weightage = 100%.");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -54,8 +58,8 @@ export default function EmployeeDashboard() {
         </div>
         <div className="flex gap-2">
           <Button asChild variant="outline" disabled={goals.length >= 8}><Link href="/employee/goals/create"><Plus className="h-4 w-4" />Create Goal</Link></Button>
-          <Button disabled={totalWeightage !== 100 || !hasDrafts} onClick={submit} title={totalWeightage === 100 ? "Submit for manager review" : "Total weightage must equal 100%"}>
-            <Send className="h-4 w-4" />Submit for Approval
+          <Button disabled={totalWeightage !== 100 || !hasDrafts || isSubmitting} onClick={submit} title={totalWeightage === 100 ? "Submit for manager review" : "Total weightage must equal 100%"}>
+            <Send className="h-4 w-4" />{isSubmitting ? "Submitting..." : "Submit for Approval"}
           </Button>
         </div>
       </div>
