@@ -2,6 +2,7 @@ import { GoalStatus } from "@prisma/client";
 import { prisma } from "../utils/prisma.js";
 import { AppError, asyncHandler } from "../utils/errors.js";
 import { assertGoalEditable, getOrCreateGoalSheet, validateGoalCreation } from "../services/goal.service.js";
+import { NotificationService } from "../services/notifications.service.js";
 
 /** Whitelist of fields an employee may set when creating or updating a goal. */
 const ALLOWED_GOAL_FIELDS = ["title", "description", "thrustArea", "uom", "target", "weightage"] as const;
@@ -87,6 +88,21 @@ export const submitGoals = asyncHandler(async (req, res) => {
     data: { submittedAt: new Date() },
     include: { goals: true }
   });
+
+  if (req.user!.managerId) {
+    // Fire-and-forget Teams Webhook Notification
+    NotificationService.sendTeamsNotification(
+      process.env.TEAMS_WEBHOOK_URL,
+      "🎯 Goal Sheet Submitted for Approval",
+      `**${req.user!.name}** has submitted their goals and is waiting for your review.`,
+      {
+        "Employee": req.user!.name,
+        "Goals Submitted": draftGoalIds.length,
+        "Status": "Pending Review"
+      }
+    ).catch(console.error);
+  }
+
   res.json(updated);
 });
 
