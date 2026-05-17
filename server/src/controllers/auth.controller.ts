@@ -8,35 +8,27 @@ function safeUser(user: { password: string; [key: string]: unknown }) {
   return rest;
 }
 
-function setTokenCookie(res: any, token: string) {
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax", // 'lax' is better for OAuth redirects across domains
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-  });
-}
+// Removed setTokenCookie because cross-domain cookies are blocked by modern browsers (Safari/ITP) when deployed on separate domains (e.g., Vercel frontend + Render backend).
 
 export const register = asyncHandler(async (req, res) => {
   // SECURITY: Only allow whitelisted fields. Role is always EMPLOYEE for self-registration.
   const { name, email, password: rawPassword } = req.body;
   const password = await bcrypt.hash(rawPassword, 12);
   const user = await prisma.user.create({ data: { name, email, password, role: "EMPLOYEE" } });
-  setTokenCookie(res, signToken(user.id));
-  res.status(201).json({ user: safeUser(user) });
+  const token = signToken(user.id);
+  res.status(201).json({ user: safeUser(user), token });
 });
 
 export const login = asyncHandler(async (req, res) => {
   const user = await prisma.user.findUnique({ where: { email: req.body.email } });
   if (!user || !(await bcrypt.compare(req.body.password, user.password))) throw new AppError("Invalid credentials", 401);
-  setTokenCookie(res, signToken(user.id));
-  res.json({ user: safeUser(user) });
+  const token = signToken(user.id);
+  res.json({ user: safeUser(user), token });
 });
 
 export const me = asyncHandler(async (req, res) => res.json({ user: req.user }));
 
 export const logout = asyncHandler(async (_req, res) => {
-  res.clearCookie("token");
   res.json({ message: "Logged out" });
 });
 

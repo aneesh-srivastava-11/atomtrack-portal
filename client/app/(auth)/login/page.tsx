@@ -24,7 +24,7 @@ export default function LoginPage() {
       const credentials = Object.fromEntries(formData) as { email: string; password: string };
       await supabase.auth.signInWithPassword(credentials).catch(() => null);
       const { data } = await api.post("/api/auth/login", credentials);
-      setUser(data.user);
+      setUser(data.user, data.token);
       router.push(data.user.role === "ADMIN" ? "/admin" : data.user.role === "MANAGER" ? "/manager" : "/employee");
     } catch {
       setError("We could not sign you in. Check your email, password, and server connection.");

@@ -25,6 +25,9 @@ app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
+// Trust the first proxy (e.g., Vercel, Nginx, Heroku) to ensure rate limiter gets the real client IP
+app.set("trust proxy", 1);
+
 // Rate limiting for auth routes
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
