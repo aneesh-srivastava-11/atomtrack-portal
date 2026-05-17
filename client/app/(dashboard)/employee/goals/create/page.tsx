@@ -84,15 +84,13 @@ export default function CreateGoalPage() {
           {step === 2 && (
             <>
               <Label>Thrust area</Label>
-              <Select value={values.thrustArea} onValueChange={(thrustArea) => setValues((v) => ({ ...v, thrustArea }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{thrustAreas.map((area) => <SelectItem key={area} value={area}>{area}</SelectItem>)}</SelectContent>
-              </Select>
+              <select value={values.thrustArea} onChange={(e) => setValues((v) => ({ ...v, thrustArea: e.target.value }))} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-2 mb-4">
+                {thrustAreas.map((area) => <option key={area} value={area}>{area}</option>)}
+              </select>
               <Label>UoM</Label>
-              <Select value={values.uom} onValueChange={(uom) => setValues((v) => ({ ...v, uom }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{uoms.map((uom) => <SelectItem key={uom} value={uom}>{uom}</SelectItem>)}</SelectContent>
-              </Select>
+              <select value={values.uom} onChange={(e) => setValues((v) => ({ ...v, uom: e.target.value }))} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-2 mb-4">
+                {uoms.map((uom) => <option key={uom} value={uom}>{uom}</option>)}
+              </select>
               <div className="flex gap-2">
                 <Button type="button" variant="outline" onClick={() => setStep(1)}>Back</Button>
                 <Button type="button" onClick={() => setStep(3)}>Next</Button>
