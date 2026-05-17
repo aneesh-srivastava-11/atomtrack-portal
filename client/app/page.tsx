@@ -7,15 +7,15 @@ import { roleHome } from "@/lib/rbac";
 
 export default function Page() {
   const router = useRouter();
-  const { user, token } = useAuthStore();
+  const { user } = useAuthStore();
 
   useEffect(() => {
-    if (user && token) {
+    if (user) {
       router.replace(roleHome(user.role));
     } else {
       router.replace("/login");
     }
-  }, [user, token, router]);
+  }, [user, router]);
 
   return null;
 }
