@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { login, logout, me, register } from "../controllers/auth.controller.js";
+import { login, logout, me, register, azureLogin, azureCallback } from "../controllers/auth.controller.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { validate } from "../middleware/validation.middleware.js";
 
@@ -20,5 +20,9 @@ router.post("/register", validate(registerSchema), register);
 router.post("/login", validate(authSchema), login);
 router.get("/me", authenticate, me);
 router.post("/logout", authenticate, logout);
+
+// Azure AD OAuth2 Routes
+router.get("/azure/login", azureLogin);
+router.get("/azure/callback", azureCallback);
 
 export default router;

@@ -3,6 +3,8 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
+import cookieParser from "cookie-parser";
+import rateLimit from "express-rate-limit";
 import authRoutes from "./routes/auth.routes.js";
 import goalsRoutes from "./routes/goals.routes.js";
 import managerRoutes from "./routes/manager.routes.js";
@@ -20,10 +22,18 @@ app.disable("x-powered-by");
 app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:3000", credentials: true }));
 app.use(express.json({ limit: "1mb" }));
+app.use(cookieParser());
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
+// Rate limiting for auth routes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 requests per windowMs
+  message: { error: "Too many login attempts, please try again after 15 minutes." }
+});
+
 app.get("/health", (_req, res) => res.json({ ok: true }));
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/goals", goalsRoutes);
 app.use("/api/manager", managerRoutes);
 app.use("/api/checkins", checkInsRoutes);

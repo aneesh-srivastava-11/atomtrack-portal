@@ -24,7 +24,7 @@ export default function LoginPage() {
       const credentials = Object.fromEntries(formData) as { email: string; password: string };
       await supabase.auth.signInWithPassword(credentials).catch(() => null);
       const { data } = await api.post("/api/auth/login", credentials);
-      setUser(data.user, data.token);
+      setUser(data.user);
       router.push(data.user.role === "ADMIN" ? "/admin" : data.user.role === "MANAGER" ? "/manager" : "/employee");
     } catch {
       setError("We could not sign you in. Check your email, password, and server connection.");
@@ -45,6 +45,26 @@ export default function LoginPage() {
         <CardContent>
           <form action={onSubmit} className="grid gap-4">
             {error && <Alert>{error}</Alert>}
+            
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="w-full flex items-center justify-center gap-3 font-medium text-slate-700 dark:text-slate-200"
+              onClick={() => {
+                window.location.href = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/auth/azure/login`;
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 21 21">
+                <path fill="#f25022" d="M1 1h9v9H1z"/><path fill="#00a4ef" d="M1 11h9v9H1z"/><path fill="#7fba00" d="M11 1h9v9h-9z"/><path fill="#ffb900" d="M11 11h9v9h-9z"/>
+              </svg>
+              Sign in with Microsoft
+            </Button>
+            
+            <div className="relative my-2">
+              <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-muted" /></div>
+              <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">Or continue with email</span></div>
+            </div>
+
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
