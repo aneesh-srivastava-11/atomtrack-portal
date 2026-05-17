@@ -4,7 +4,7 @@ AtomTrack is a full-stack goal planning, approval, quarterly check-in, and repor
 
 ## Stack
 
-- Client: Next.js 15 App Router, React 18, TypeScript, Tailwind, shadcn-style UI, Zustand, Axios, Supabase client
+- Client: Next.js 15 App Router, React , TypeScript, Tailwind, shadcn-style UI, Zustand, Axios, Supabase client
 - Server: Express, TypeScript, Prisma, PostgreSQL/Supabase, JWT auth, Zod validation, ExcelJS, PDFKit
 
 ## Quick Start
