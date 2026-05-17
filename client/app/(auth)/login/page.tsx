@@ -17,9 +17,11 @@ export default function LoginPage() {
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   async function onSubmit(formData: FormData) {
     setError("");
+    setIsLoading(true);
     try {
       const credentials = Object.fromEntries(formData) as { email: string; password: string };
       await supabase.auth.signInWithPassword(credentials).catch(() => null);
@@ -28,6 +30,8 @@ export default function LoginPage() {
       router.push(data.user.role === "ADMIN" ? "/admin" : data.user.role === "MANAGER" ? "/manager" : "/employee");
     } catch {
       setError("We could not sign you in. Check your email, password, and server connection.");
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -79,7 +83,9 @@ export default function LoginPage() {
               </div>
               <Input id="password" name="password" type="password" defaultValue="Password@123" autoComplete="current-password" required />
             </div>
-            <Button>Sign in</Button>
+            <Button disabled={isLoading}>
+              {isLoading ? "Signing in..." : "Sign in"}
+            </Button>
           </form>
         </CardContent>
       </Card>
