@@ -8,7 +8,7 @@ export const goalBodySchema = z.object({
     description: z.string().min(3),
     thrustArea: z.enum(["SALES", "OPERATIONS", "INNOVATION", "CUSTOMER_SUCCESS", "PEOPLE", "FINANCE", "COMPLIANCE", "TECHNOLOGY"]),
     uom: z.enum(["MIN_NUMERIC", "MAX_NUMERIC", "MIN_PERCENTAGE", "MAX_PERCENTAGE", "TIMELINE", "ZERO_BASED"]),
-    target: z.coerce.number().positive(),
+    target: z.coerce.number().nonnegative(),
     weightage: z.coerce.number().int().min(10, "Minimum 10%").max(100),
     isShared: z.boolean().optional(),
     primaryOwnerId: z.string().optional(),

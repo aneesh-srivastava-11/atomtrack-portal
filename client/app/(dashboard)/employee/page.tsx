@@ -133,7 +133,11 @@ export default function EmployeeDashboard() {
                   )}
 
                   <div className="flex flex-wrap gap-2">
-                    <Button asChild size="icon" variant="outline" disabled={goal.status !== "DRAFT"}><Link href={`/employee/goals/${goal.id}/edit`}><Edit className="h-4 w-4" /></Link></Button>
+                    {goal.status === "DRAFT" ? (
+                      <Button asChild size="icon" variant="outline"><Link href={`/employee/goals/${goal.id}/edit`}><Edit className="h-4 w-4" /></Link></Button>
+                    ) : (
+                      <Button size="icon" variant="outline" disabled><Edit className="h-4 w-4" /></Button>
+                    )}
                     <Button size="icon" variant="destructive" disabled={goal.status !== "DRAFT"} onClick={() => deleteGoal(goal.id)}><Trash2 className="h-4 w-4" /></Button>
                     {goal.isShared && (
                       <span className="flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-muted-foreground">
