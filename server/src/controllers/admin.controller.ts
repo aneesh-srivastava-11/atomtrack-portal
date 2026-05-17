@@ -24,15 +24,19 @@ export const completionDashboard = asyncHandler(async (_req, res) => {
     prisma.cycle.findFirst({ where: { active: true } })
   ]);
 
-  // Per-manager breakdown — real data from the database
+  // Per-manager breakdown — real data from the database, optimized to prevent massive over-fetching
   const managersRaw = await prisma.user.findMany({
     where: { role: "MANAGER" },
-    include: {
+    select: {
+      name: true,
       reports: {
-        include: {
+        select: {
           goalSheets: {
             where: activeCycle ? { cycleId: activeCycle.id } : undefined,
-            include: { goals: { include: { checkIns: true } } }
+            select: {
+              submittedAt: true,
+              locked: true
+            }
           }
         }
       }
