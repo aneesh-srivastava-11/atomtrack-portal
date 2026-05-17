@@ -33,7 +33,17 @@ export default function EditGoalPage() {
         <form action={onSubmit} className="grid gap-4">
           <Label>Title<Input name="title" defaultValue={goal.title} className="mt-2" /></Label>
           <Label>Description<Input name="description" defaultValue={goal.description} className="mt-2" /></Label>
-          <Label>Target<Input name="target" type="number" defaultValue={goal.target} className="mt-2" /></Label>
+          <Label>Thrust Area
+            <select name="thrustArea" defaultValue={goal.thrustArea} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-2">
+              {["SALES", "OPERATIONS", "INNOVATION", "CUSTOMER_SUCCESS", "PEOPLE", "FINANCE", "COMPLIANCE", "TECHNOLOGY"].map((area) => <option key={area} value={area}>{area}</option>)}
+            </select>
+          </Label>
+          <Label>UoM
+            <select name="uom" defaultValue={goal.uom} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-2">
+              {["MIN_NUMERIC", "MAX_NUMERIC", "MIN_PERCENTAGE", "MAX_PERCENTAGE", "TIMELINE", "ZERO_BASED"].map((uom) => <option key={uom} value={uom}>{uom}</option>)}
+            </select>
+          </Label>
+          <Label>Target<Input name="target" type="number" step="0.01" defaultValue={goal.target} className="mt-2" /></Label>
           <Label>Weightage<Input name="weightage" type="number" min="10" max="100" defaultValue={goal.weightage} className="mt-2" /></Label>
           <Button>Save</Button>
         </form>

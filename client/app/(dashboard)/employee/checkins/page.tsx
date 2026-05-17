@@ -163,14 +163,11 @@ export default function CheckInsPage() {
                   </Label>
                   <Label>
                     Status
-                    <Select name="progressStatus" defaultValue={existing?.progressStatus || "NOT_STARTED"}>
-                      <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="NOT_STARTED">Not Started</SelectItem>
-                        <SelectItem value="ON_TRACK">On Track</SelectItem>
-                        <SelectItem value="COMPLETED">Completed</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <select name="progressStatus" defaultValue={existing?.progressStatus || "NOT_STARTED"} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-2">
+                      <option value="NOT_STARTED">Not Started</option>
+                      <option value="ON_TRACK">On Track</option>
+                      <option value="COMPLETED">Completed</option>
+                    </select>
                   </Label>
                   <div className="flex items-end">
                     <Button className="w-full" disabled={saving === goal.id}>
