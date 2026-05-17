@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Mail, ShieldCheck } from "lucide-react";
 import { api } from "@/lib/api";
-import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +23,6 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const credentials = Object.fromEntries(formData) as { email: string; password: string };
-      await supabase.auth.signInWithPassword(credentials).catch(() => null);
       const { data } = await api.post("/api/auth/login", credentials);
       setUser(data.user, data.token);
       router.push(data.user.role === "ADMIN" ? "/admin" : data.user.role === "MANAGER" ? "/manager" : "/employee");

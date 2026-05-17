@@ -27,23 +27,44 @@ export const completionDashboard = asyncHandler(async (_req, res) => {
   let managerStats: Array<{ name: string; teamSize: number; submitted: number; approved: number; completion: number }> = [];
 
   if (activeCycle) {
-    const statsRaw = await prisma.$queryRaw<Array<{
-      employees: number;
-      submitted: number;
-      approved: number;
-      approvedGoals: number;
-      goalsWithCheckIns: number;
-    }>>`
-      SELECT 
-        (SELECT COUNT(*)::int FROM "User" WHERE role = 'EMPLOYEE') as employees,
-        (SELECT COUNT(*)::int FROM "GoalSheet" WHERE "submittedAt" IS NOT NULL AND "cycleId" = ${activeCycle.id}) as submitted,
-        (SELECT COUNT(*)::int FROM "GoalSheet" WHERE "locked" = true AND "cycleId" = ${activeCycle.id}) as approved,
-        (SELECT COUNT(*)::int FROM "Goal" g JOIN "GoalSheet" gs ON g."goalSheetId" = gs.id WHERE g.status = 'APPROVED' AND gs."cycleId" = ${activeCycle.id}) as "approvedGoals",
-        (SELECT COUNT(DISTINCT g.id)::int FROM "Goal" g 
-         JOIN "GoalSheet" gs ON g."goalSheetId" = gs.id
-         JOIN "CheckIn" c ON c."goalId" = g.id 
-         WHERE g.status = 'APPROVED' AND gs."cycleId" = ${activeCycle.id}) as "goalsWithCheckIns"
-    `;
+    // Run both queries in parallel — saves one full round trip to the database
+    const [statsRaw, managersRaw] = await Promise.all([
+      prisma.$queryRaw<Array<{
+        employees: number;
+        submitted: number;
+        approved: number;
+        approvedGoals: number;
+        goalsWithCheckIns: number;
+      }>>`
+        SELECT 
+          (SELECT COUNT(*)::int FROM "User" WHERE role = 'EMPLOYEE') as employees,
+          (SELECT COUNT(*)::int FROM "GoalSheet" WHERE "submittedAt" IS NOT NULL AND "cycleId" = ${activeCycle.id}) as submitted,
+          (SELECT COUNT(*)::int FROM "GoalSheet" WHERE "locked" = true AND "cycleId" = ${activeCycle.id}) as approved,
+          (SELECT COUNT(*)::int FROM "Goal" g JOIN "GoalSheet" gs ON g."goalSheetId" = gs.id WHERE g.status = 'APPROVED' AND gs."cycleId" = ${activeCycle.id}) as "approvedGoals",
+          (SELECT COUNT(DISTINCT g.id)::int FROM "Goal" g 
+           JOIN "GoalSheet" gs ON g."goalSheetId" = gs.id
+           JOIN "CheckIn" c ON c."goalId" = g.id 
+           WHERE g.status = 'APPROVED' AND gs."cycleId" = ${activeCycle.id}) as "goalsWithCheckIns"
+      `,
+      prisma.$queryRaw<Array<{
+        name: string;
+        teamSize: number;
+        submitted: number;
+        approved: number;
+      }>>`
+        SELECT 
+          m.name,
+          COUNT(e.id)::int as "teamSize",
+          COUNT(CASE WHEN gs."submittedAt" IS NOT NULL THEN 1 END)::int as submitted,
+          COUNT(CASE WHEN gs.locked = true THEN 1 END)::int as approved
+        FROM "User" m
+        LEFT JOIN "User" e ON e."managerId" = m.id AND e.role = 'EMPLOYEE'
+        LEFT JOIN "GoalSheet" gs ON gs."userId" = e.id AND gs."cycleId" = ${activeCycle.id}
+        WHERE m.role = 'MANAGER'
+        GROUP BY m.id, m.name
+        ORDER BY m.name ASC
+      `
+    ]);
 
     if (statsRaw && statsRaw.length > 0) {
       employees = statsRaw[0].employees;
@@ -52,25 +73,6 @@ export const completionDashboard = asyncHandler(async (_req, res) => {
       approvedGoals = statsRaw[0].approvedGoals;
       goalsWithCheckIns = statsRaw[0].goalsWithCheckIns;
     }
-
-    const managersRaw = await prisma.$queryRaw<Array<{
-      name: string;
-      teamSize: number;
-      submitted: number;
-      approved: number;
-    }>>`
-      SELECT 
-        m.name,
-        COUNT(e.id)::int as "teamSize",
-        COUNT(CASE WHEN gs."submittedAt" IS NOT NULL THEN 1 END)::int as submitted,
-        COUNT(CASE WHEN gs.locked = true THEN 1 END)::int as approved
-      FROM "User" m
-      LEFT JOIN "User" e ON e."managerId" = m.id AND e.role = 'EMPLOYEE'
-      LEFT JOIN "GoalSheet" gs ON gs."userId" = e.id AND gs."cycleId" = ${activeCycle.id}
-      WHERE m.role = 'MANAGER'
-      GROUP BY m.id, m.name
-      ORDER BY m.name ASC
-    `;
 
     managerStats = managersRaw.map((mgr) => ({
       name: mgr.name,

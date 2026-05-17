@@ -1,7 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import { requestContext } from "./async-storage.js";
 
-const basePrisma = new PrismaClient();
+// Serverless-safe singleton: reuse the PrismaClient across warm function invocations
+const globalForPrisma = globalThis as unknown as { __prisma?: PrismaClient };
+const basePrisma = globalForPrisma.__prisma || new PrismaClient({ log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"] });
+if (process.env.NODE_ENV !== "production") globalForPrisma.__prisma = basePrisma;
 
 export const prisma = basePrisma.$extends({
   query: {
