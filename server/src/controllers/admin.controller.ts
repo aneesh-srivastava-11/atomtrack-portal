@@ -17,55 +17,73 @@ export const activateCycle = asyncHandler(async (req, res) => {
 });
 
 export const completionDashboard = asyncHandler(async (_req, res) => {
-  const [employees, submitted, approved, activeCycle] = await Promise.all([
-    prisma.user.count({ where: { role: "EMPLOYEE" } }),
-    prisma.goalSheet.count({ where: { submittedAt: { not: null } } }),
-    prisma.goalSheet.count({ where: { locked: true } }),
-    prisma.cycle.findFirst({ where: { active: true } })
-  ]);
+  const activeCycle = await prisma.cycle.findFirst({ where: { active: true } });
 
-  // Per-manager breakdown — real data from the database, optimized to prevent massive over-fetching
-  const managersRaw = await prisma.user.findMany({
-    where: { role: "MANAGER" },
-    select: {
-      name: true,
-      reports: {
-        select: {
-          goalSheets: {
-            where: activeCycle ? { cycleId: activeCycle.id } : undefined,
-            select: {
-              submittedAt: true,
-              locked: true
-            }
-          }
-        }
-      }
+  let employees = 0;
+  let submitted = 0;
+  let approved = 0;
+  let approvedGoals = 0;
+  let goalsWithCheckIns = 0;
+  let managerStats: Array<{ name: string; teamSize: number; submitted: number; approved: number; completion: number }> = [];
+
+  if (activeCycle) {
+    const statsRaw = await prisma.$queryRaw<Array<{
+      employees: number;
+      submitted: number;
+      approved: number;
+      approvedGoals: number;
+      goalsWithCheckIns: number;
+    }>>`
+      SELECT 
+        (SELECT COUNT(*)::int FROM "User" WHERE role = 'EMPLOYEE') as employees,
+        (SELECT COUNT(*)::int FROM "GoalSheet" WHERE "submittedAt" IS NOT NULL AND "cycleId" = ${activeCycle.id}) as submitted,
+        (SELECT COUNT(*)::int FROM "GoalSheet" WHERE "locked" = true AND "cycleId" = ${activeCycle.id}) as approved,
+        (SELECT COUNT(*)::int FROM "Goal" g JOIN "GoalSheet" gs ON g."goalSheetId" = gs.id WHERE g.status = 'APPROVED' AND gs."cycleId" = ${activeCycle.id}) as "approvedGoals",
+        (SELECT COUNT(DISTINCT g.id)::int FROM "Goal" g 
+         JOIN "GoalSheet" gs ON g."goalSheetId" = gs.id
+         JOIN "CheckIn" c ON c."goalId" = g.id 
+         WHERE g.status = 'APPROVED' AND gs."cycleId" = ${activeCycle.id}) as "goalsWithCheckIns"
+    `;
+
+    if (statsRaw && statsRaw.length > 0) {
+      employees = statsRaw[0].employees;
+      submitted = statsRaw[0].submitted;
+      approved = statsRaw[0].approved;
+      approvedGoals = statsRaw[0].approvedGoals;
+      goalsWithCheckIns = statsRaw[0].goalsWithCheckIns;
     }
-  });
 
-  const managerStats = managersRaw.map((mgr) => {
-    const teamSize = mgr.reports.length;
-    const sheetsSubmitted = mgr.reports.filter((emp) =>
-      emp.goalSheets.some((s) => s.submittedAt)
-    ).length;
-    const sheetsApproved = mgr.reports.filter((emp) =>
-      emp.goalSheets.some((s) => s.locked)
-    ).length;
+    const managersRaw = await prisma.$queryRaw<Array<{
+      name: string;
+      teamSize: number;
+      submitted: number;
+      approved: number;
+    }>>`
+      SELECT 
+        m.name,
+        COUNT(e.id)::int as "teamSize",
+        COUNT(CASE WHEN gs."submittedAt" IS NOT NULL THEN 1 END)::int as submitted,
+        COUNT(CASE WHEN gs.locked = true THEN 1 END)::int as approved
+      FROM "User" m
+      LEFT JOIN "User" e ON e."managerId" = m.id AND e.role = 'EMPLOYEE'
+      LEFT JOIN "GoalSheet" gs ON gs."userId" = e.id AND gs."cycleId" = ${activeCycle.id}
+      WHERE m.role = 'MANAGER'
+      GROUP BY m.id, m.name
+      ORDER BY m.name ASC
+    `;
 
-    return {
+    managerStats = managersRaw.map((mgr) => ({
       name: mgr.name,
-      teamSize,
-      submitted: sheetsSubmitted,
-      approved: sheetsApproved,
-      completion: teamSize ? Math.round((sheetsApproved / teamSize) * 100) : 0
-    };
-  });
+      teamSize: mgr.teamSize,
+      submitted: mgr.submitted,
+      approved: mgr.approved,
+      completion: mgr.teamSize ? Math.round((mgr.approved / mgr.teamSize) * 100) : 0
+    }));
+  } else {
+    // If no active cycle, count employees
+    employees = await prisma.user.count({ where: { role: "EMPLOYEE" } });
+  }
 
-  // Check-in completion: how many approved goals have at least one check-in
-  const approvedGoals = await prisma.goal.count({ where: { status: "APPROVED" } });
-  const goalsWithCheckIns = await prisma.goal.count({
-    where: { status: "APPROVED", checkIns: { some: {} } }
-  });
   const checkInPercent = approvedGoals ? Math.round((goalsWithCheckIns / approvedGoals) * 100) : 0;
 
   res.json({
