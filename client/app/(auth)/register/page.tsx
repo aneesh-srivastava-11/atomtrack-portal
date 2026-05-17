@@ -15,7 +15,7 @@ export default function RegisterPage() {
 
   async function onSubmit(formData: FormData) {
     const { data } = await api.post("/api/auth/register", { ...Object.fromEntries(formData), role: "EMPLOYEE" });
-    setUser(data.user);
+    setUser(data.user, data.token);
     router.push("/employee");
   }
 

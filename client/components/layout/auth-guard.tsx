@@ -11,14 +11,14 @@ import { isRouteAllowed, roleHome } from "@/lib/rbac";
  * - If logged in but accessing a route outside their role → redirect to role home
  */
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const pathname = usePathname();
   const router = useRouter();
   const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
     // Not authenticated
-    if (!user) {
+    if (!user || !token) {
       router.replace("/login");
       return;
     }
@@ -30,7 +30,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
 
     setAllowed(true);
-  }, [user, pathname, router]);
+  }, [user, token, pathname, router]);
 
   if (!allowed) {
     return (
