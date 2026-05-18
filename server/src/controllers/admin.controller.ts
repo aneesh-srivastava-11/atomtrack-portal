@@ -101,21 +101,24 @@ export const completionDashboard = asyncHandler(async (_req, res) => {
 
 export const unlockGoal = asyncHandler(async (req, res) => {
   const id = String(req.params.id);
+  const { reason } = req.body;
+  if (!reason || String(reason).trim() === "") throw new AppError("Unlock reason is required", 400);
+
   const goal = await prisma.goal.findUnique({ where: { id }, include: { goalSheet: true } });
+  if (!goal) throw new AppError("Goal not found", 404);
+
   const updated = await prisma.$transaction(async (tx) => {
-    if (goal) {
-      await tx.goalSheet.update({ where: { id: goal.goalSheetId }, data: { locked: false } });
-      await tx.auditLog.create({
-        data: {
-          goalId: goal.id,
-          userId: req.user!.id,
-          action: "ADMIN_UNLOCK",
-          oldValue: { locked: goal.goalSheet.locked },
-          newValue: { reason: req.body.reason, locked: false }
-        }
-      });
-    }
-    return tx.goal.update({ where: { id }, data: { status: "DRAFT", rejectionComment: `[Admin Unlock Reason]: ${req.body.reason}` } });
+    await tx.goalSheet.update({ where: { id: goal.goalSheetId }, data: { locked: false } });
+    await tx.auditLog.create({
+      data: {
+        goalId: goal.id,
+        userId: req.user!.id,
+        action: "ADMIN_UNLOCK",
+        oldValue: { locked: goal.goalSheet.locked },
+        newValue: { reason, locked: false }
+      }
+    });
+    return tx.goal.update({ where: { id }, data: { status: "DRAFT", rejectionComment: `[Admin Unlock Reason]: ${reason}` } });
   });
   res.json(updated);
 });

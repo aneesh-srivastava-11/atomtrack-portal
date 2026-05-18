@@ -21,8 +21,10 @@ export default function ApprovalsPage() {
   const [rejectComment, setRejectComment] = useState("");
   const [editedValues, setEditedValues] = useState<Record<string, { target?: number; weightage?: number }>>({});
 
+  const [error, setError] = useState("");
+
   const fetchSheets = useCallback(() => {
-    api.get("/api/manager/team-goals").then(({ data }) => setSheets(data));
+    api.get("/api/manager/team-goals").then(({ data }) => setSheets(data)).catch(() => setError("Failed to load team goals"));
   }, []);
 
   useEffect(() => { fetchSheets(); }, [fetchSheets]);
@@ -32,25 +34,40 @@ export default function ApprovalsPage() {
     .filter((goal) => `${goal.employee.name} ${goal.title} ${goal.status}`.toLowerCase().includes(query.toLowerCase()));
 
   async function approveSelected() {
-    await Promise.all(selected.map((id) => api.put(`/api/manager/goals/${id}/approve`)));
-    setSelected([]);
-    fetchSheets();
+    setError("");
+    try {
+      await Promise.all(selected.map((id) => api.put(`/api/manager/goals/${id}/approve`)));
+      setSelected([]);
+      fetchSheets();
+    } catch (err: any) {
+      setError(err.response?.data?.error?.message || "Failed to approve selected goals");
+    }
   }
 
   async function saveInlineEdit(goalId: string) {
     const edits = editedValues[goalId];
     if (!edits) return;
-    await api.put(`/api/manager/goals/${goalId}/edit`, edits);
-    setEditedValues((prev) => { const next = { ...prev }; delete next[goalId]; return next; });
-    fetchSheets();
+    setError("");
+    try {
+      await api.put(`/api/manager/goals/${goalId}/edit`, edits);
+      setEditedValues((prev) => { const next = { ...prev }; delete next[goalId]; return next; });
+      fetchSheets();
+    } catch (err: any) {
+      setError(err.response?.data?.error?.message || "Failed to save edit");
+    }
   }
 
   async function rejectGoal() {
     if (!rejectGoalId) return;
-    await api.put(`/api/manager/goals/${rejectGoalId}/reject`, { comment: rejectComment });
-    setRejectGoalId(null);
-    setRejectComment("");
-    fetchSheets();
+    setError("");
+    try {
+      await api.put(`/api/manager/goals/${rejectGoalId}/reject`, { comment: rejectComment });
+      setRejectGoalId(null);
+      setRejectComment("");
+      fetchSheets();
+    } catch (err: any) {
+      setError(err.response?.data?.error?.message || "Failed to reject goal");
+    }
   }
 
   function handleFieldChange(goalId: string, field: "target" | "weightage", value: string) {
@@ -70,6 +87,11 @@ export default function ApprovalsPage() {
         <Button variant="outline"><Download className="h-4 w-4" />Export CSV</Button>
       </CardHeader>
       <CardContent>
+        {error && (
+          <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+            {error}
+          </div>
+        )}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="relative w-full max-w-sm">
             <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -88,7 +110,14 @@ export default function ApprovalsPage() {
         <Table>
           <TableHeader className="sticky top-0 bg-card">
             <TableRow>
-              <TableHead className="w-10"><span className="sr-only">Select</span></TableHead>
+              <TableHead className="w-10">
+                <input
+                  aria-label="Select all goals"
+                  type="checkbox"
+                  checked={selected.length === rows.length && rows.length > 0}
+                  onChange={(event) => setSelected(event.target.checked ? rows.map(r => r.id) : [])}
+                />
+              </TableHead>
               <TableHead>Employee</TableHead>
               <TableHead>Goal Title</TableHead>
               <TableHead>Target</TableHead>

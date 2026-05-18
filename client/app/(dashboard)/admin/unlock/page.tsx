@@ -30,12 +30,19 @@ export default function UnlockPage() {
 
   useEffect(() => { fetchData(); }, []);
 
+  const [error, setError] = useState("");
+
   async function handleUnlock() {
     if (!unlockGoalId) return;
-    await api.post(`/api/admin/goals/${unlockGoalId}/unlock`, { reason });
-    setUnlockGoalId(null);
-    setReason("");
-    fetchData();
+    setError("");
+    try {
+      await api.post(`/api/admin/goals/${unlockGoalId}/unlock`, { reason });
+      setUnlockGoalId(null);
+      setReason("");
+      fetchData();
+    } catch (err: any) {
+      setError(err.response?.data?.error?.message || "Failed to unlock goal");
+    }
   }
 
   return (
@@ -104,6 +111,7 @@ export default function UnlockPage() {
               Reason for unlock
               <Input className="mt-2" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Employee requested target revision after org restructuring" required />
             </Label>
+            {error && <p className="text-sm text-red-500">{error}</p>}
             <Button variant="destructive" disabled={!reason.trim()} onClick={handleUnlock}>
               <Unlock className="h-4 w-4" />Confirm unlock
             </Button>

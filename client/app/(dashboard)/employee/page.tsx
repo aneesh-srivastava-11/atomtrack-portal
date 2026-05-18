@@ -12,6 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 
+function computeProgress(uom: string, target: number, actual?: number | null): number {
+  if (actual == null) return 0;
+  if (uom.startsWith("MIN")) return Math.min(Math.round((actual / target) * 100), 200);
+  if (uom.startsWith("MAX")) return actual === 0 ? 100 : Math.min(Math.round((target / actual) * 100), 200);
+  if (uom === "ZERO_BASED") return actual === 0 ? 100 : 0;
+  return actual <= target ? 100 : 0;
+}
+
 export default function EmployeeDashboard() {
   const { goals, totalWeightage, setGoals, removeGoal } = useGoalStore();
   const [loading, setLoading] = useState(true);
@@ -129,6 +137,24 @@ export default function EmployeeDashboard() {
                     <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950">
                       <p className="mb-1 font-medium text-amber-800 dark:text-amber-300">Feedback / Reason:</p>
                       <p className="text-amber-700 dark:text-amber-400">{goal.rejectionComment}</p>
+                    </div>
+                  )}
+
+                  {(goal.status === "APPROVED" || goal.status === "LOCKED") && (
+                    <div className="mb-4">
+                      {(() => {
+                        const latestCheckIn = goal.checkIns?.sort((a, b) => b.quarter.localeCompare(a.quarter))[0];
+                        const progress = computeProgress(goal.uom, goal.target, latestCheckIn?.actualAchievement);
+                        return (
+                          <>
+                            <div className="mb-1 flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">Current Progress</span>
+                              <span className="font-medium text-green-600 dark:text-green-400">{progress}%</span>
+                            </div>
+                            <Progress className="h-2" value={Math.min(progress, 100)} />
+                          </>
+                        );
+                      })()}
                     </div>
                   )}
 

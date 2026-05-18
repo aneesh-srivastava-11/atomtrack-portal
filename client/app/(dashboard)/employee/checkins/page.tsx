@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const quarters: Quarter[] = ["Q1", "Q2", "Q3", "Q4"];
 
@@ -61,7 +60,7 @@ export default function CheckInsPage() {
         goalId,
         quarter,
         plannedTarget: Number(formData.get("plannedTarget")),
-        actualAchievement: Number(formData.get("actualAchievement")),
+        actualAchievement: formData.get("actualAchievement") ? Number(formData.get("actualAchievement")) : null,
         progressStatus: formData.get("progressStatus"),
       });
       // Refresh goals to get updated check-in data
@@ -77,6 +76,10 @@ export default function CheckInsPage() {
   }
 
   const approvedGoals = goals.filter((g) => g.status === "APPROVED" || g.status === "LOCKED");
+  const cycle = approvedGoals[0]?.goalSheet?.cycle;
+  const windowKey = (quarter.toLowerCase() + "Window") as keyof typeof cycle;
+  const windowDeadline = cycle ? cycle[windowKey] : null;
+  const isWindowOpen = windowDeadline ? new Date() <= new Date(windowDeadline as string) : true;
 
   return (
     <section className="grid gap-5">
@@ -88,6 +91,12 @@ export default function CheckInsPage() {
       {error && (
         <Alert className="border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
           {error}
+        </Alert>
+      )}
+      
+      {!isWindowOpen && windowDeadline && (
+        <Alert className="border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
+          The window for {quarter} closed on {new Date(windowDeadline as string).toLocaleDateString()}. You can no longer save updates for this quarter.
         </Alert>
       )}
 
@@ -148,6 +157,7 @@ export default function CheckInsPage() {
                       step="0.01"
                       defaultValue={existing?.plannedTarget ?? goal.target}
                       className="mt-2"
+                      disabled={!isWindowOpen}
                     />
                   </Label>
                   <Label>
@@ -159,19 +169,20 @@ export default function CheckInsPage() {
                       defaultValue={existing?.actualAchievement ?? ""}
                       className="mt-2"
                       placeholder="Enter actual"
+                      disabled={!isWindowOpen}
                     />
                   </Label>
                   <Label>
                     Status
-                    <select name="progressStatus" defaultValue={existing?.progressStatus || "NOT_STARTED"} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-2">
+                    <select name="progressStatus" defaultValue={existing?.progressStatus || "NOT_STARTED"} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-2" disabled={!isWindowOpen}>
                       <option value="NOT_STARTED">Not Started</option>
                       <option value="ON_TRACK">On Track</option>
                       <option value="COMPLETED">Completed</option>
                     </select>
                   </Label>
                   <div className="flex items-end">
-                    <Button className="w-full" disabled={saving === goal.id}>
-                      {saving === goal.id ? "Saving..." : <><Save className="h-4 w-4" />Save</>}
+                    <Button className="w-full" disabled={!isWindowOpen || saving === goal.id}>
+                      {saving === goal.id ? "Saving..." : !isWindowOpen ? "Window Closed" : <><Save className="h-4 w-4" />Save</>}
                     </Button>
                   </div>
                 </form>

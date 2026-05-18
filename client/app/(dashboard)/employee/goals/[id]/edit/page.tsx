@@ -4,6 +4,9 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { Goal } from "@/lib/types";
 import { api } from "@/lib/api";
+import { useGoalStore } from "@/stores/goalStore";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,8 +15,17 @@ import { Label } from "@/components/ui/label";
 export default function EditGoalPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { totalWeightage, setGoals } = useGoalStore();
   const [goal, setGoal] = useState<Goal | null>(null);
-  useEffect(() => { api.get(`/api/goals/${id}`).then(({ data }) => setGoal(data)); }, [id]);
+  const [currentWeightage, setCurrentWeightage] = useState(0);
+
+  useEffect(() => { 
+    api.get(`/api/goals/${id}`).then(({ data }) => {
+      setGoal(data);
+      setCurrentWeightage(data.weightage);
+    }); 
+    api.get("/api/goals").then(({ data }) => setGoals(data));
+  }, [id, setGoals]);
 
   async function onSubmit(formData: FormData) {
     await api.put(`/api/goals/${id}`, {
@@ -26,6 +38,11 @@ export default function EditGoalPage() {
   }
 
   if (!goal) return <p>Loading...</p>;
+
+  // The total weightage available to this goal is the total remaining budget PLUS whatever this goal currently held before edits.
+  const remainingBudget = 100 - totalWeightage + goal.weightage;
+  const isValidWeightage = currentWeightage >= 10 && currentWeightage <= 100 && currentWeightage <= remainingBudget;
+
   return (
     <Card className="max-w-2xl">
       <CardHeader><CardTitle>Edit goal</CardTitle></CardHeader>
@@ -44,8 +61,35 @@ export default function EditGoalPage() {
             </select>
           </Label>
           <Label>Target<Input name="target" type="number" step="0.01" defaultValue={goal.target} className="mt-2" /></Label>
-          <Label>Weightage<Input name="weightage" type="number" min="10" max="100" defaultValue={goal.weightage} className="mt-2" /></Label>
-          <Button>Save</Button>
+          
+          <Label className="flex justify-between mt-2">
+            <span>Weightage</span>
+            <span className={currentWeightage > remainingBudget ? "text-red-500" : "text-muted-foreground"}>
+              {remainingBudget}% max available
+            </span>
+          </Label>
+          <Input 
+            name="weightage" 
+            type="number" 
+            min="10" 
+            max="100" 
+            value={currentWeightage || ""} 
+            onChange={(e) => setCurrentWeightage(Number(e.target.value))} 
+            className="mt-2" 
+          />
+
+          <Alert className={isValidWeightage ? "border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300" : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300"}>
+            <span className="flex items-center gap-2">
+              {isValidWeightage ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+              {currentWeightage > remainingBudget 
+                ? `You can only assign up to ${remainingBudget}% based on your other goals.` 
+                : isValidWeightage 
+                  ? `${currentWeightage}% weightage is valid.` 
+                  : "Weightage must be between 10% and 100%."}
+            </span>
+          </Alert>
+
+          <Button disabled={!isValidWeightage}>Save</Button>
         </form>
       </CardContent>
     </Card>

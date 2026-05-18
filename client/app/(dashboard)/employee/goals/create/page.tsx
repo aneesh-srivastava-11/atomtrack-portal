@@ -1,21 +1,23 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { api } from "@/lib/api";
+import { useGoalStore } from "@/stores/goalStore";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const thrustAreas = ["SALES", "OPERATIONS", "INNOVATION", "CUSTOMER_SUCCESS", "PEOPLE", "FINANCE", "COMPLIANCE", "TECHNOLOGY"];
 const uoms = ["MIN_NUMERIC", "MAX_NUMERIC", "MIN_PERCENTAGE", "MAX_PERCENTAGE", "TIMELINE", "ZERO_BASED"];
 
 export default function CreateGoalPage() {
   const router = useRouter();
+  const { totalWeightage, setGoals } = useGoalStore();
+  const remaining = Math.max(0, 100 - totalWeightage);
   const [step, setStep] = useState(1);
   const [values, setValues] = useState({ 
     title: "", 
@@ -27,6 +29,10 @@ export default function CreateGoalPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    api.get("/api/goals").then(({ data }) => setGoals(data));
+  }, [setGoals]);
 
   const isValidWeightage = values.weightage >= 10 && values.weightage <= 100;
 
@@ -100,16 +106,27 @@ export default function CreateGoalPage() {
           {step === 3 && (
             <>
               <Label>Target<Input value={values.target} onChange={e => setValues({...values, target: e.target.value})} type="number" min="0" step="0.01" className="mt-2" required /></Label>
-              <Label>Weightage<Input value={values.weightage || ""} onChange={e => setValues({...values, weightage: Number(e.target.value)})} type="number" min="1" max="100" className="mt-2" required /></Label>
-              <Alert className={isValidWeightage ? "border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300" : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300"}>
+              <Label className="flex justify-between mt-2">
+                <span>Weightage</span>
+                <span className={values.weightage > remaining ? "text-red-500" : "text-muted-foreground"}>
+                  {remaining}% remaining
+                </span>
+              </Label>
+              <Input value={values.weightage || ""} onChange={e => setValues({...values, weightage: Number(e.target.value)})} type="number" min="1" max="100" className="mt-2" required />
+              
+              <Alert className={isValidWeightage && values.weightage <= remaining ? "border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300" : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300"}>
                 <span className="flex items-center gap-2">
-                  {isValidWeightage ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-                  {isValidWeightage ? `${values.weightage}% weightage will be assigned to this goal.` : "Weightage must be between 10% and 100%."}
+                  {isValidWeightage && values.weightage <= remaining ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                  {values.weightage > remaining 
+                    ? `You only have ${remaining}% weightage left across your goals.` 
+                    : isValidWeightage 
+                      ? `${values.weightage}% weightage will be assigned to this goal.` 
+                      : "Weightage must be between 10% and 100%."}
                 </span>
               </Alert>
               <div className="flex gap-2">
                 <Button type="button" variant="outline" onClick={() => setStep(2)}>Back</Button>
-                <Button disabled={!isValidWeightage || loading}>{loading ? "Creating..." : "Create goal"}</Button>
+                <Button disabled={!isValidWeightage || values.weightage > remaining || loading}>{loading ? "Creating..." : "Create goal"}</Button>
               </div>
             </>
           )}

@@ -15,6 +15,10 @@ export interface Cycle {
   name: string;
   year: number;
   active: boolean;
+  q1Window?: string;
+  q2Window?: string;
+  q3Window?: string;
+  q4Window?: string;
 }
 
 export interface Goal {
@@ -31,6 +35,9 @@ export interface Goal {
   primaryOwnerId?: string;
   sharedWith?: string[];
   checkIns?: CheckIn[];
+  goalSheet?: {
+    cycle?: Cycle;
+  };
 }
 
 export interface CheckIn {
