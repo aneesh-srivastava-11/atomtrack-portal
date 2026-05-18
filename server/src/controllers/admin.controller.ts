@@ -115,7 +115,7 @@ export const unlockGoal = asyncHandler(async (req, res) => {
         }
       });
     }
-    return tx.goal.update({ where: { id }, data: { status: "DRAFT" } });
+    return tx.goal.update({ where: { id }, data: { status: "DRAFT", rejectionComment: `[Admin Unlock Reason]: ${req.body.reason}` } });
   });
   res.json(updated);
 });

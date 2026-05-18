@@ -68,7 +68,7 @@ export default function EmployeeDashboard() {
         <Alert className="border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
           <span className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 shrink-0" />
-            One or more goals were returned for rework by your manager. Review the comments below, make changes, and re-submit.
+            One or more goals were returned for rework or unlocked by Admin. Review the comments below, make changes, and re-submit.
           </span>
         </Alert>
       )}
@@ -127,7 +127,7 @@ export default function EmployeeDashboard() {
                   {/* Rejection comment from manager */}
                   {goal.rejectionComment && (
                     <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950">
-                      <p className="mb-1 font-medium text-amber-800 dark:text-amber-300">Manager feedback:</p>
+                      <p className="mb-1 font-medium text-amber-800 dark:text-amber-300">Feedback / Reason:</p>
                       <p className="text-amber-700 dark:text-amber-400">{goal.rejectionComment}</p>
                     </div>
                   )}
